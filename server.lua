@@ -18,10 +18,13 @@ QBCore.Commands.Add("dev", Lang:t('info.toggle_dev_mode'), {}, false, function(s
 end, 'admin')
 
 RegisterNetEvent('hud:server:GainStress', function(amount)
+    if Config.DisableStress then return end
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
+    local Job = Player.PlayerData.job.name
+    local JobType = Player.PlayerData.job.type
     local newStress
-    if not Player or (Config.DisablePoliceStress and Player.PlayerData.job.name == 'police') then return end
+    if not Player or Config.WhitelistedJobs[JobType] or Config.WhitelistedJobs[Job] then return end
     if not ResetStress then
         if not Player.PlayerData.metadata['stress'] then
             Player.PlayerData.metadata['stress'] = 0
@@ -36,10 +39,11 @@ RegisterNetEvent('hud:server:GainStress', function(amount)
     end
     Player.Functions.SetMetaData('stress', newStress)
     TriggerClientEvent('hud:client:UpdateStress', src, newStress)
-    TriggerClientEvent('QBCore:Notify', src, Lang:t("notify.stress_gain"), 'error', 1500)
+    TriggerClientEvent('QBCore:Notify', src, Lang:t('notify.stress_gain'), 'error', 1500)
 end)
 
 RegisterNetEvent('hud:server:RelieveStress', function(amount)
+    if Config.DisableStress then return end
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     local newStress
@@ -58,7 +62,7 @@ RegisterNetEvent('hud:server:RelieveStress', function(amount)
     end
     Player.Functions.SetMetaData('stress', newStress)
     TriggerClientEvent('hud:client:UpdateStress', src, newStress)
-    TriggerClientEvent('QBCore:Notify', src, Lang:t("notify.stress_removed"))
+    TriggerClientEvent('QBCore:Notify', src, Lang:t('notify.stress_removed'))
 end)
 
 RegisterNetEvent('hud:server:saveUIData', function(data)

@@ -1102,55 +1102,67 @@ end)
 
 -- Stress Gain
 
-CreateThread(function() -- Speeding
-    while true do
-        if LocalPlayer.state.isLoggedIn then
-            local ped = PlayerPedId()
-            if IsPedInAnyVehicle(ped, false) then
-                local speed = GetEntitySpeed(GetVehiclePedIsIn(ped, false)) * speedMultiplier
-                local stressSpeed = seatbeltOn and config.MinimumSpeed or config.MinimumSpeedUnbuckled
-                if speed >= stressSpeed then
-                    TriggerServerEvent('hud:server:GainStress', math.random(1, 3))
+if not config.DisableStress then
+    CreateThread(function() -- Speeding
+        while true do
+            if LocalPlayer.state.isLoggedIn then
+                local ped = PlayerPedId()
+                if IsPedInAnyVehicle(ped, false) then
+                    local veh = GetVehiclePedIsIn(ped, false)
+                    local vehClass = GetVehicleClass(veh)
+                    local speed = GetEntitySpeed(veh) * speedMultiplier
+                    local vehHash = GetEntityModel(veh)
+                    if config.VehClassStress[tostring(vehClass)] and not config.WhitelistedVehicles[vehHash] then
+                        local stressSpeed
+                        if vehClass == 8 then -- Motorcycle exception for seatbelt
+                            stressSpeed = config.MinimumSpeed
+                        else
+                            stressSpeed = seatbeltOn and config.MinimumSpeed or config.MinimumSpeedUnbuckled
+                        end
+                        if speed >= stressSpeed then
+                            TriggerServerEvent('hud:server:GainStress', math.random(1, 3))
+                        end
+                    end
+                end
+            end
+            Wait(10000)
+        end
+    end)
+
+    local function IsWhitelistedWeaponStress(weapon)
+        if weapon then
+            for _, v in pairs(config.WhitelistedWeaponStress) do
+                if weapon == v then
+                    return true
                 end
             end
         end
-        Wait(10000)
+        return false
     end
-end)
 
-local function IsWhitelistedWeaponStress(weapon)
-    if weapon then
-        for _, v in pairs(config.WhitelistedWeaponStress) do
-            if weapon == v then
-                return true
-            end
-        end
-    end
-    return false
-end
-
-CreateThread(function() -- Shooting
-    while true do
-        if LocalPlayer.state.isLoggedIn then
-            local ped = PlayerPedId()
-            local weapon = GetSelectedPedWeapon(ped)
-            if weapon ~= `WEAPON_UNARMED` then
-                if IsPedShooting(ped) and not IsWhitelistedWeaponStress(weapon) then
-                    if math.random() < config.StressChance then
-                        TriggerServerEvent('hud:server:GainStress', math.random(1, 3))
+    CreateThread(function() -- Shooting
+        while true do
+            if LocalPlayer.state.isLoggedIn then
+                local ped = PlayerPedId()
+                local weapon = GetSelectedPedWeapon(ped)
+                if weapon ~= `WEAPON_UNARMED` then
+                    if IsPedShooting(ped) and not IsWhitelistedWeaponStress(weapon) then
+                        if math.random() < config.StressChance then
+                            TriggerServerEvent('hud:server:GainStress', math.random(1, 3))
+                        end
+                        Wait(100)
+                    else
+                        Wait(500)
                     end
-                    Wait(100)
                 else
-                    Wait(500)
+                    Wait(1000)
                 end
             else
                 Wait(1000)
             end
-        else
-            Wait(1000)
         end
-    end
-end)
+    end)
+end
 
 -- Stress Screen Effects
 
